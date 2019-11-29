@@ -1,9 +1,7 @@
-from pathlib import Path
-import urllib.request
 import bs4
-import requests
-from bs4 import BeautifulSoup
 import html
+import requests
+from pathlib import Path
 
 
 def get_page_urls():
@@ -48,7 +46,7 @@ def clean_titles(titles, underscore=False):
     for i in range(len(titles)):
         title = html.unescape(titles[i])
         if underscore:
-            #"_".join(title.split(" "))
+            # "_".join(title.split(" "))
             title.replace(" ", "_")
         clean_titles.append(title)
     return clean_titles
@@ -76,7 +74,7 @@ def get_titles_urls(page_url):
 
 
 def file_stats(title, url):
-    file_len = int(urllib.request.urlopen(url).headers.get("Content-Length"))
+    file_len = int(requests.get(url).headers.get("Content-Length"))
     file_mb = str(file_len/10.0**6)[:5]
     print(f"File name: {title}.mp3")
     print(f"File size: {file_mb} MB")
@@ -84,21 +82,24 @@ def file_stats(title, url):
 
 
 def download(file_title, file_url, progress_bar=False):
+    file_name = file_title+".mp3"
     if is_downloadable(file_url):
         file_stats(file_title, file_url)
         if progress_bar:
             # tqdm PROGRESS BAR IS SLOW 4:16(m:s) with vs < 0:20 without
             response = requests.get(file_url, stream=True)
-            with open(file_title+".mp3", "wb") as handle:
+            with open(file_name, "wb") as handle:
                 for data in tqdm.tqdm(response.iter_content()):
                     handle.write(data)
         else:
-            urllib.request.urlretrieve(file_url, file_title+".mp3")
+            response = requests.get(file_url, stream=True)
+            with open(file_name, "wb") as f:
+                f.write(response.content)
 
 
 def main(download_location=""):
     page_urls = get_page_urls()
-    page_number=1
+    page_number = 1
     for page in page_urls:
         print(f"Accessing page {page_number} / {len(page_urls)}")
         print("Downloading from page " + page)
@@ -106,7 +107,7 @@ def main(download_location=""):
         for i in range(len(titles)):
             print(f"Downloading file {str(i+1)} / {str(len(titles))} (on current page)")
             download(download_location+titles[i], urls[i])
-        page_number+=1
+        page_number += 1
 
 
 home = str(Path.home())
